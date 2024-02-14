@@ -101,6 +101,8 @@ pub fn Deque(BackingInt: type, head: Direction) type {
         /// Returns index counted backwards from the capacity of the `Deque`
         /// This is a convience method that avoids having to @truncate() everywhere
         pub inline fn tailIndex(self: @This(), off: BackingCount) BackingIndex {
+            @setRuntimeSafety(false);
+            std.debug.assert(off > 0);
             return @truncate(self.capacity - off);
         }
 
