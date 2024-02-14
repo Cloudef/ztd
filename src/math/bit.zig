@@ -303,7 +303,7 @@ test "Deque" {
         inline .big => .little,
     };
 
-    inline for (.{.left, .right}) |head| {
+    inline for (.{ .left, .right }) |head| {
         var deque = Deque(u32, head){};
         try std.testing.expectEqual(0, deque.len);
         try deque.push(u8, 'i');
@@ -332,7 +332,7 @@ test "Deque" {
                 try std.testing.expectEqualSlices(u8, "moi", (try swapped.extractAsBytes(u24, 8))[0..]);
                 try std.testing.expectEqualSlices(u8, "emoi", (try swapped.extractAsBytes(u32, 0))[0..]);
                 try std.testing.expectEqual(deque.value, swapped.as(u32, reverse_endian));
-            }
+            },
         }
 
         const saved = deque;
@@ -360,7 +360,7 @@ test "Deque" {
         try std.testing.expectEqual(0, deque.value);
     }
 
-    inline for (.{.left, .right}) |head| {
+    inline for (.{ .left, .right }) |head| {
         var deque = Deque(u16, head){};
         try std.testing.expectEqual(0, deque.len);
         try deque.push(u5, 2);
