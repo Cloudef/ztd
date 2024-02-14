@@ -122,6 +122,14 @@ pub fn BaseCoder(Impl: type) type {
             const out = allocator.alloc(u8, len);
             return try encodeSlice(bytes, out);
         }
+
+        pub fn formatEncodeSlice(bytes: []const u8, comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) !void {
+            return encodeSliceToWriter(bytes, writer);
+        }
+
+        pub fn fmtEncodeSlice(bytes: []const u8) std.fmt.Formatter(formatEncodeSlice) {
+            return .{ .data = bytes };
+        }
     };
 }
 
