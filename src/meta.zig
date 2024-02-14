@@ -1,6 +1,6 @@
 const std = @import("std");
 
-/// Welcome to jungle
+/// Welcome to the jungle
 const CompileDebug = false;
 
 /// Wrapper for @compileError(std.fmt.comptimePrint(...))
