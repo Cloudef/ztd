@@ -44,12 +44,12 @@ pub fn BaseCoder(Impl: type) type {
             for (bytes) |b| {
                 deque.push(Symbol, try Impl.lookup(b)) catch unreachable;
                 while (deque.len >= @bitSizeOf(u8)) {
-                    _ = try buf.write(deque.popFront(u8) catch unreachable);
+                    _ = try buf.write(deque.popFirst(u8) catch unreachable);
                 }
             }
             // Padding?
             // if (deque.len > 0) {
-            //     _ = try buf.write(deque.popFront(u8) catch unreachable);
+            //     _ = try buf.write(deque.popFirst(u8) catch unreachable);
             // }
             try buf.flush();
         }
@@ -81,7 +81,7 @@ pub fn BaseCoder(Impl: type) type {
             const len = comptime encodedLength(u8, @sizeOf(T));
             if (out.len < len) return error.NoSpaceLeft;
             var deque = ztd.math.bit.Deque(T, .right).init(in, @bitSizeOf(T), .big);
-            inline for (0..len) |i| out[i] = Impl.set[deque.popFront(Symbol) catch unreachable];
+            inline for (0..len) |i| out[i] = Impl.set[deque.popFirst(Symbol) catch unreachable];
             return out[0..len];
         }
 
@@ -100,11 +100,11 @@ pub fn BaseCoder(Impl: type) type {
             for (bytes) |b| {
                 deque.push(u8, b) catch unreachable;
                 while (deque.len >= @bitSizeOf(Symbol)) {
-                    _ = try buf.write(Impl.set[deque.popFront(Symbol) catch unreachable]);
+                    _ = try buf.write(Impl.set[deque.popFirst(Symbol) catch unreachable]);
                 }
             }
             if (deque.len > 0) {
-                _ = try buf.write(Impl.set[deque.popBack(Symbol) catch unreachable]);
+                _ = try buf.write(Impl.set[deque.popLast(Symbol) catch unreachable]);
             }
             try buf.flush();
         }

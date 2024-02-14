@@ -156,14 +156,14 @@ pub fn Deque(BackingInt: type, head: Direction) type {
             return self.rawPush(@bitSizeOf(T), v);
         }
 
-        /// When thinking about front and back, don't think in terms of bits
+        /// When thinking about first and last, don't think in terms of bits
         /// Think in terms of the API this `Deque` struct exposes
-        /// That is front is front of the queue and back is back of the queue
-        inline fn internalPop(self: *@This(), T: type, bitsz: BackingIndex, comptime front: bool) DequeError!T {
+        /// That is first pushed in, last pushed in
+        inline fn internalPop(self: *@This(), T: type, bitsz: BackingIndex, comptime first: bool) DequeError!T {
             @setRuntimeSafety(false);
             if (self.len == 0) return error.NoSpaceLeft;
             var ret: T = undefined;
-            if (front) {
+            if (first) {
                 switch (head) {
                     .right => {
                         if (bitsz >= self.len) {
@@ -223,19 +223,19 @@ pub fn Deque(BackingInt: type, head: Direction) type {
             return ret;
         }
 
-        /// Raw variant of the front pop without type safety
+        /// Raw variant of the first pop without type safety
         /// Useful when need to align pops based on runtime variables
-        pub inline fn rawPopFront(self: *@This(), T: type, bitsz: BackingIndex) DequeError!T {
+        pub inline fn rawPopFirst(self: *@This(), T: type, bitsz: BackingIndex) DequeError!T {
             return self.internalPop(T, bitsz, true);
         }
 
-        /// Raw variant of the back pop without type safety
+        /// Raw variant of the last pop without type safety
         /// Useful when need to align pops based on runtime variables
-        pub inline fn rawPopBack(self: *@This(), T: type, bitsz: BackingIndex) DequeError!T {
+        pub inline fn rawPopLast(self: *@This(), T: type, bitsz: BackingIndex) DequeError!T {
             return self.internalPop(T, bitsz, false);
         }
 
-        /// Pops `T` from front of the `Deque`
+        /// Pops the first pushed `T` from the `Deque`
         /// If pop would overflow, then the result will be widened to `@bitSizeOf(T)` and deque becomes empty
         /// Trying to pop from a empty deque returns error
         /// E.g. If empty `Deque` is backed by `u16` and `T` is `u8`, the result would look like:
@@ -245,12 +245,12 @@ pub fn Deque(BackingInt: type, head: Direction) type {
         /// head: .left
         /// pop: 11111111 10101010
         /// pop: 10101010 00000000
-        pub inline fn popFront(self: *@This(), T: type) DequeError!T {
+        pub inline fn popFirst(self: *@This(), T: type) DequeError!T {
             ztd.meta.comptimeError(@bitSizeOf(T) >= self.capacity, "ztd: `T` must be smaller than `BackingInt`", .{});
             return self.internalPop(T, @bitSizeOf(T), true);
         }
 
-        /// Pops `T` from back of the `Deque`
+        /// Pops the last pushed `T` from the `Deque`
         /// If pop would overflow, then the result will be widened to `@bitSizeOf(T)` and deque becomes empty
         /// Trying to pop from a empty deque returns error
         /// E.g. If empty `Deque` is backed by `u16` and `T` is `u8`, the result would look like:
@@ -260,7 +260,7 @@ pub fn Deque(BackingInt: type, head: Direction) type {
         /// head: .left
         /// pop: 11111111 10101010
         /// pop: 11111111 00000000
-        pub inline fn popBack(self: *@This(), T: type) DequeError!T {
+        pub inline fn popLast(self: *@This(), T: type) DequeError!T {
             ztd.meta.comptimeError(@bitSizeOf(T) >= self.capacity, "ztd: `T` must be smaller than `BackingInt`", .{});
             return self.internalPop(T, @bitSizeOf(T), false);
         }
@@ -337,25 +337,25 @@ test "Deque" {
 
         const saved = deque;
 
-        try std.testing.expectEqual('e', deque.popBack(u8));
+        try std.testing.expectEqual('e', deque.popLast(u8));
         try std.testing.expectEqual(24, deque.len);
-        try std.testing.expectEqual('m', deque.popBack(u8));
+        try std.testing.expectEqual('m', deque.popLast(u8));
         try std.testing.expectEqual(16, deque.len);
-        try std.testing.expectEqual('o', deque.popBack(u8));
+        try std.testing.expectEqual('o', deque.popLast(u8));
         try std.testing.expectEqual(8, deque.len);
-        try std.testing.expectEqual('i', deque.popBack(u8));
+        try std.testing.expectEqual('i', deque.popLast(u8));
         try std.testing.expectEqual(0, deque.len);
         try std.testing.expectEqual(0, deque.value);
 
         deque = saved;
 
-        try std.testing.expectEqual('i', deque.popFront(u8));
+        try std.testing.expectEqual('i', deque.popFirst(u8));
         try std.testing.expectEqual(24, deque.len);
-        try std.testing.expectEqual('o', deque.popFront(u8));
+        try std.testing.expectEqual('o', deque.popFirst(u8));
         try std.testing.expectEqual(16, deque.len);
-        try std.testing.expectEqual('m', deque.popFront(u8));
+        try std.testing.expectEqual('m', deque.popFirst(u8));
         try std.testing.expectEqual(8, deque.len);
-        try std.testing.expectEqual('e', deque.popFront(u8));
+        try std.testing.expectEqual('e', deque.popFirst(u8));
         try std.testing.expectEqual(0, deque.len);
         try std.testing.expectEqual(0, deque.value);
     }
@@ -375,16 +375,16 @@ test "Deque" {
 
         const saved = deque;
 
-        try std.testing.expectEqual(2, deque.popFront(u5));
-        try std.testing.expectEqual(1, deque.popFront(u5));
-        try std.testing.expectEqual(2, deque.popFront(u5));
-        try std.testing.expectEqual(16, deque.popFront(u5));
+        try std.testing.expectEqual(2, deque.popFirst(u5));
+        try std.testing.expectEqual(1, deque.popFirst(u5));
+        try std.testing.expectEqual(2, deque.popFirst(u5));
+        try std.testing.expectEqual(16, deque.popFirst(u5));
 
         deque = saved;
 
-        try std.testing.expectEqual(1, deque.popBack(u1));
-        try std.testing.expectEqual(2, deque.popBack(u5));
-        try std.testing.expectEqual(1, deque.popBack(u5));
-        try std.testing.expectEqual(2, deque.popBack(u5));
+        try std.testing.expectEqual(1, deque.popLast(u1));
+        try std.testing.expectEqual(2, deque.popLast(u5));
+        try std.testing.expectEqual(1, deque.popLast(u5));
+        try std.testing.expectEqual(2, deque.popLast(u5));
     }
 }
