@@ -53,7 +53,7 @@ pub inline fn comptimeAssertValueTypeSignedness(v: anytype, comptime prefix: []c
 /// Return function return type without error or with error even if the function does not have error union return type
 pub fn ReturnType(comptime fun: anytype, comptime with_eu: bool) type {
     comptimeAssertValueType(fun, "ztd", "fun", &.{.Fn});
-    const fun_info = @typeInfo(@TypeOf(fun));
+    const fun_info = @typeInfo(@TypeOf(fun)).Fn;
     return switch (@typeInfo(fun_info.return_type.?)) {
         .ErrorUnion => |eu| if (with_eu) fun_info.return_type.? else eu.payload,
         else => if (with_eu) error{}!fun_info.return_type.? else fun_info.return_type.?,
