@@ -4,22 +4,97 @@ const private = @import("private.zig");
 
 const c = struct {
     extern fn setenv(key: [*:0]u8, value: [*:0]u8, overwrite: c_int) c_int;
+    extern fn unsetenv(key: [*:0]u8) c_int;
 };
 
 pub const SetenvError = error{
     SetenvFailed,
-} || std.mem.Allocator.Error;
+};
 
-/// Calls either libc setenv or modifies std.os.environ on non-libc build
-pub fn setenv(key: []const u8, value: []const u8) SetenvError!void {
+// This keeps track of the env state in process to avoid double freeing stuff
+// If some other parts in your code modifies `std.os.environ` then bad things can happen
+// This is only used if not linked against libc
+// Yes this is global, that's setenv for you
+const env_state = struct {
+    var allocator: std.mem.Allocator = private.opt(std.mem.Allocator, std.heap.page_allocator, ".setenv_allocator");
+    var start: usize = 0;
+    var end: usize = 0;
+    var original_envp: [][*:0]u8 = undefined;
+    var allocated_envp: bool = false;
+    var once = std.once(do_once);
+
+    fn do_once() void {
+        start = if (std.os.environ.len > 0) @intFromPtr(std.os.environ[0]) else 0;
+        end = if (std.os.environ.len > 0) @intFromPtr(std.os.environ[std.os.environ.len - 1]) else start;
+        original_envp = std.os.environ;
+    }
+
+    fn resize_env(n: usize) bool {
+        var newp = allocator.alloc([*:0]u8, n) catch return false;
+
+        if (n >= std.os.environ.len) {
+            for (std.os.environ, newp[0..std.os.environ.len]) |*old, *new| new.* = old.*;
+        } else {
+            for (std.os.environ[0..n], newp) |*old, *new| new.* = old.*;
+        }
+
+        if (allocated_envp) {
+            allocator.free(std.os.environ);
+        }
+
+        std.os.environ = newp[0..n];
+        allocated_envp = true;
+        return true;
+    }
+
+    fn free_item(item: [*:0]u8) void {
+        if (@intFromPtr(item) < start or @intFromPtr(item) > end) {
+            allocator.free(std.mem.span(item));
+        }
+    }
+
+    fn find_index(key: []const u8) ?usize {
+        for (std.os.environ, 0..) |*kv, i| {
+            var token = std.mem.splitScalar(u8, std.mem.span(kv.*), '=');
+            const env_key = token.first();
+            if (std.mem.eql(u8, env_key, key)) return i;
+        }
+        return null;
+    }
+
+    // only for tests
+    fn reset_memory(free_items: bool) void {
+        if (free_items) for (std.os.environ) |*kv| free_item(kv.*);
+        if (env_state.allocated_envp) {
+            env_state.allocator.free(std.os.environ);
+        }
+        env_state.allocated_envp = false;
+        std.os.environ = original_envp;
+    }
+};
+
+/// Calls either libc setenv / unsetenv or modifies std.os.environ on non-libc build
+/// Returns `error.SetenvFailed` if there was error either calling the libc function
+/// or reallocating memory failed.
+pub fn setenv(key: []const u8, maybe_value: ?[]const u8) SetenvError!void {
+    if (key.len == 0) {
+        return error.SetenvFailed;
+    }
+
     if (builtin.link_libc) {
         const allocator = std.heap.c_allocator;
         const c_key = try allocator.dupeZ(u8, key);
         defer allocator.free(c_key);
-        const c_value = try allocator.dupeZ(u8, value);
-        defer allocator.free(c_value);
-        if (c.setenv(c_key, c_value, 1) != 0) {
-            return error.SetenvFailed;
+        if (maybe_value) |value| {
+            const c_value = try allocator.dupeZ(u8, value);
+            defer allocator.free(c_value);
+            if (c.setenv(c_key, c_value, 1) != 0) {
+                return error.SetenvFailed;
+            }
+        } else {
+            if (c.unsetenv(c_key) != 0) {
+                return error.SetenvFailed;
+            }
         }
     } else {
         if (builtin.output_mode == .Lib) {
@@ -52,48 +127,78 @@ pub fn setenv(key: []const u8, value: []const u8) SetenvError!void {
             );
         }
 
-        const allocator = std.heap.page_allocator;
+        // The simplified start logic doesn't populate environ.
+        if (std.start.simplified_logic) {
+            @compileError("ztd: setenv is unavailable with `std.start.simplified_logic`");
+        }
 
-        // Potential footgun here?
-        // https://github.com/ziglang/zig/issues/4524
-        const state = struct {
-            var start: usize = 0;
-            var end: usize = 0;
-            var once = std.once(do_once);
-            fn do_once() void {
-                start = if (std.os.environ.len > 0) @intFromPtr(std.os.environ[0]) else 0;
-                end = if (std.os.environ.len > 0) @intFromPtr(std.os.environ[std.os.environ.len - 1]) else start;
-            }
-        };
-        state.once.call();
+        const allocator = env_state.allocator;
+        env_state.once.call();
 
-        var buf = try allocator.allocSentinel(u8, key.len + value.len + 1, 0);
-        @memcpy(buf[0..key.len], key[0..]);
-        buf[key.len] = '=';
-        @memcpy(buf[key.len + 1 ..], value[0..]);
+        if (maybe_value) |value| {
+            var buf = allocator.allocSentinel(u8, key.len + value.len + 1, 0) catch return error.SetenvFailed;
+            @memcpy(buf[0..key.len], key[0..]);
+            buf[key.len] = '=';
+            @memcpy(buf[key.len + 1 ..], value[0..]);
 
-        for (std.os.environ) |*kv| {
-            var token = std.mem.splitScalar(u8, std.mem.span(kv.*), '=');
-            const env_key = token.first();
-
-            if (std.mem.eql(u8, env_key, key)) {
-                if (@intFromPtr(kv.*) < state.start or @intFromPtr(kv.*) > state.end) {
-                    allocator.free(std.mem.span(kv.*));
-                }
+            if (env_state.find_index(key)) |index| {
+                const kv = &std.os.environ[index];
+                env_state.free_item(kv.*);
                 kv.* = buf;
                 return;
             }
-        }
 
-        if (!allocator.resize(std.os.environ, std.os.environ.len + 1)) {
-            return error.SetenvFailed;
-        }
+            if (!env_state.resize_env(std.os.environ.len + 1)) {
+                return error.SetenvFailed;
+            }
 
-        std.os.environ[std.os.environ.len - 1] = buf;
+            std.os.environ[std.os.environ.len - 1] = buf;
+        } else {
+            if (env_state.find_index(key)) |index| {
+                const kv = &std.os.environ[index];
+                env_state.free_item(kv.*);
+
+                for (index + 1..std.os.environ.len) |i| {
+                    std.os.environ[i - 1] = std.os.environ[i];
+                }
+
+                if (!env_state.resize_env(std.os.environ.len - 1)) {
+                    return error.SetenvFailed;
+                }
+            }
+        }
     }
 }
 
 test "setenv" {
+    // do not allow empty keys
+    try std.testing.expectError(error.SetenvFailed, setenv("", "evil"));
+    try std.testing.expectEqual(null, std.os.getenv("evil"));
+    // empty values are ok though
+    try setenv("good", "");
+    try std.testing.expectEqualSlices(u8, "", std.os.getenv("good").?);
+    try setenv("good", null);
+    try std.testing.expectEqual(null, std.os.getenv("good"));
+    env_state.reset_memory(true);
+}
+
+test "setenv allocs" {
+    env_state.allocator = std.testing.allocator;
     try setenv("joulupukki", "asuu pohjoisnavalla");
     try std.testing.expectEqualSlices(u8, "asuu pohjoisnavalla", std.os.getenv("joulupukki").?);
+    try setenv("joulupukki", null);
+    try std.testing.expectEqual(null, std.os.getenv("joulupukki"));
+    try setenv("joulupukki", "tuo lahjoja");
+    try std.testing.expectEqualSlices(u8, "tuo lahjoja", std.os.getenv("joulupukki").?);
+    try setenv("tontut", "vahtii lapsia");
+    try std.testing.expectEqualSlices(u8, "vahtii lapsia", std.os.getenv("tontut").?);
+    try setenv("joulupukki", null);
+    try setenv("tontut", null);
+    env_state.reset_memory(false);
+}
+
+test "setenv failing allocs" {
+    env_state.allocator = std.testing.failing_allocator;
+    try std.testing.expectError(error.SetenvFailed, setenv("joulupukki", "asuu pohjoisnavalla"));
+    try setenv("joulupukki", null); // no-op
 }
