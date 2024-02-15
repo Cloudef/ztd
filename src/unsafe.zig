@@ -86,7 +86,7 @@ pub fn setenv(key: []const u8, value: []const u8) SetenvError!void {
         }
 
         if (!allocator.resize(std.os.environ, std.os.environ.len + 1)) {
-            return error.SetEnvFailed;
+            return error.SetenvFailed;
         }
 
         std.os.environ[std.os.environ.len - 1] = buf;
