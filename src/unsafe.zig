@@ -21,6 +21,7 @@ const env_state = struct {
     var end: usize = 0;
     var original_envp: [][*:0]u8 = undefined;
     var allocated_envp: bool = false;
+    var mutex: std.Thread.Mutex = .{};
     var once = std.once(do_once);
 
     fn do_once() void {
@@ -68,6 +69,7 @@ const env_state = struct {
         if (env_state.allocated_envp) {
             env_state.allocator.free(std.os.environ);
         }
+
         env_state.allocated_envp = false;
         std.os.environ = original_envp;
     }
@@ -132,8 +134,10 @@ pub fn setenv(key: []const u8, maybe_value: ?[]const u8) SetenvError!void {
             @compileError("ztd: setenv is unavailable with `std.start.simplified_logic`");
         }
 
-        const allocator = env_state.allocator;
+        env_state.mutex.lock();
+        defer env_state.mutex.unlock();
         env_state.once.call();
+        const allocator = env_state.allocator;
 
         if (maybe_value) |value| {
             var buf = allocator.allocSentinel(u8, key.len + value.len + 1, 0) catch return error.SetenvFailed;
