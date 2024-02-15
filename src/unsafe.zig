@@ -92,3 +92,8 @@ pub fn setenv(key: []const u8, value: []const u8) SetenvError!void {
         std.os.environ[std.os.environ.len - 1] = buf;
     }
 }
+
+test "setenv" {
+    try setenv("joulupukki", "asuu pohjoisnavalla");
+    try std.testing.expectEqualSlices(u8, "asuu pohjoisnavalla", std.os.getenv("joulupukki").?);
+}
