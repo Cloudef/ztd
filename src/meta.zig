@@ -41,7 +41,7 @@ pub inline fn comptimeAssertValueType(v: anytype, comptime prefix: []const u8, c
 
 /// Assert the signedness of a integer type comptime with a useful message
 pub inline fn comptimeAssertTypeSignedness(comptime T: type, comptime prefix: []const u8, comptime name: []const u8, comptime signedness: std.builtin.Signedness) void {
-    comptimeAssertType(T, "ztd", "T", &.{ .Int });
+    comptimeAssertType(T, "ztd", "T", &.{.Int});
     comptimeError(@typeInfo(T).Int.signedness != signedness, "{s}: `{s}` must be a `{s}` integer", .{ prefix, name, @tagName(signedness) });
 }
 
