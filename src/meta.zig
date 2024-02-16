@@ -50,14 +50,62 @@ pub inline fn comptimeAssertValueTypeSignedness(v: anytype, comptime prefix: []c
     comptimeAssertTypeSignedness(@TypeOf(v), prefix, name, signedness);
 }
 
-/// Return function return type without error or with error even if the function does not have error union return type
+/// If `T` is an error union, returns the payload, otherwise reutrns `T` as is
+pub fn WithoutError(T: type) type {
+    return switch (@typeInfo(T)) {
+        .ErrorUnion => |eu| eu.payload,
+        else => T,
+    };
+}
+
+/// If `T` is an error union, returns `T` as is, otherwise returns `error{}!T`
+pub fn WithError(T: type) type {
+    return switch (@typeInfo(T)) {
+        .ErrorUnion => T,
+        else => error{}!T,
+    };
+}
+
+/// If `with_eu` is true, returns `WithError(fun.return_type)`
+/// If `with_eu` is false, returns `WithoutError(fun.return_type)`
 pub fn ReturnType(comptime fun: anytype, comptime with_eu: bool) type {
     comptimeAssertValueType(fun, "ztd", "fun", &.{.Fn});
     const fun_info = @typeInfo(@TypeOf(fun)).Fn;
-    return switch (@typeInfo(fun_info.return_type.?)) {
-        .ErrorUnion => |eu| if (with_eu) fun_info.return_type.? else eu.payload,
-        else => if (with_eu) error{}!fun_info.return_type.? else fun_info.return_type.?,
+    return if (with_eu) WithError(fun_info.return_type.?) else WithoutError(fun_info.return_type.?);
+}
+
+test "ReturnType" {
+    const tst = struct {
+        fn err() anyerror!bool {
+            return true;
+        }
+        fn ok() bool {
+            return true;
+        }
     };
+    try std.testing.expectEqual(anyerror!bool, ReturnType(tst.err, true));
+    try std.testing.expectEqual(bool, ReturnType(tst.err, false));
+    try std.testing.expectEqual(error{}!bool, ReturnType(tst.ok, true));
+    try std.testing.expectEqual(bool, ReturnType(tst.ok, false));
+}
+
+/// Converts error union to optional
+pub fn maybe(v: anytype) ?WithoutError(@TypeOf(v)) {
+    comptimeAssertValueType(v, "ztd", "v", &.{.ErrorUnion});
+    return if (std.meta.isError(v)) null else v catch unreachable;
+}
+
+test "maybe" {
+    const tst = struct {
+        fn err() !bool {
+            return error.fail;
+        }
+        fn ok() !bool {
+            return true;
+        }
+    };
+    try std.testing.expectEqual(null, maybe(tst.err()));
+    try std.testing.expectEqual(true, maybe(tst.ok()));
 }
 
 // -- start of cursed but incredibly useful
