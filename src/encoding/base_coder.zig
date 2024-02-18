@@ -86,7 +86,7 @@ pub fn BaseCoder(Impl: type) type {
         }
 
         /// Encodes single block to a writer
-        pub inline fn encodeToWriter(comptime T: type, in: T, writer: anytype) Error!usize {
+        pub inline fn encodeToWriter(comptime T: type, in: T, writer: anytype) (Error || @TypeOf(writer).Error)!usize {
             const len = comptime encodedLength(u8, @sizeOf(T));
             var out: [len]u8 = undefined;
             try writer.writeAll(try encode(T, in, &out));
