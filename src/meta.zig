@@ -92,7 +92,7 @@ test "ReturnType" {
 /// Converts error union to optional
 pub fn maybe(v: anytype) ?WithoutError(@TypeOf(v)) {
     comptimeAssertValueType(v, "ztd", "v", &.{.ErrorUnion});
-    return if (std.meta.isError(v)) null else v catch unreachable;
+    return if (v) |unwrapped| unwrapped else |_| null;
 }
 
 test "maybe" {
