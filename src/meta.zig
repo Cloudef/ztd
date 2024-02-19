@@ -108,6 +108,31 @@ test "maybe" {
     try std.testing.expectEqual(true, maybe(tst.ok()));
 }
 
+/// Returns true if `v` is `null`
+pub fn isNull(v: anytype) bool {
+    return switch (@typeInfo(@TypeOf(v))) {
+        .Null, .Optional => v == null,
+        else => false,
+    };
+}
+
+test "isNull" {
+    const tst = struct {
+        fn nil() ?bool {
+            return null;
+        }
+        fn some() ?bool {
+            return true;
+        }
+        fn fixed() bool {
+            return true;
+        }
+    };
+    try std.testing.expectEqual(true, isNull(tst.nil()));
+    try std.testing.expectEqual(false, isNull(tst.some()));
+    try std.testing.expectEqual(false, isNull(tst.fixed()));
+}
+
 // -- start of cursed but incredibly useful
 
 // Probably not very useful outside this cursed code, so not making it pub
