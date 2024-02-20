@@ -133,6 +133,27 @@ test "isNull" {
     try std.testing.expectEqual(false, isNull(tst.fixed()));
 }
 
+/// Assigns every field that exists in both from `src` to `dst`
+pub fn assign(dst: anytype, src: anytype) void {
+    comptimeAssertValueType(dst, "ztd", "dst", &.{.Pointer});
+    comptimeAssertValueType(src, "ztd", "src", &.{ .Struct, .Union });
+    inline for (std.meta.fields(std.meta.Child(@TypeOf(dst)))) |f| {
+        if (@hasField(StrippedOf(@TypeOf(src), &.{.Pointer}), f.name)) {
+            @field(dst, f.name) = @field(src, f.name);
+        }
+    }
+}
+
+/// Derives `T` from `src`
+/// That is creates empty `T` and does `assign(new, src)` on it and returns the result.
+pub inline fn derive(T: type, init: anytype, src: anytype) T {
+    comptimeAssertValueType(init, "ztd", "init", &.{.Struct});
+    comptimeAssertValueType(src, "ztd", "src", &.{ .Struct, .Union });
+    var dst: T = std.mem.zeroInit(T, init);
+    assign(&dst, src);
+    return dst;
+}
+
 // -- start of cursed but incredibly useful
 
 // Probably not very useful outside this cursed code, so not making it pub
