@@ -247,11 +247,13 @@ pub fn FieldTree(comptime T: type) type {
             global_index.* += 1;
             switch (@typeInfo(FT)) {
                 .Union, .Struct => inline for (std.meta.fields(FT)) |desc| {
+                    @setEvalBranchQuota((name.len + desc.name.len + 1) * 1000);
                     const fname = std.fmt.comptimePrint("{s}.{s}", .{ name, desc.name });
                     index += filteredFieldsInner(desc.type, filter, fname, thisIndex, global_index, if (fields) |fls| fls[index..] else null);
                 },
                 .Optional, .Pointer => if (isContainer(std.meta.Child(FT))) {
                     inline for (std.meta.fields(std.meta.Child(FT))) |desc| {
+                        @setEvalBranchQuota((name.len + desc.name.len + 1) * 1000);
                         const fname = std.fmt.comptimePrint("{s}.{s}", .{ name, desc.name });
                         index += filteredFieldsInner(desc.type, filter, fname, thisIndex, global_index, if (fields) |fls| fls[index..] else null);
                     }
@@ -366,7 +368,7 @@ pub fn ptrKeypathField(root: anytype, comptime keypath: []const u8) *FieldTree(S
         }
         break :blk @Type(.{
             .Struct = .{
-                .layout = .Auto,
+                .layout = .auto,
                 .fields = &types,
                 .decls = &.{},
                 .is_tuple = true,

@@ -6,7 +6,7 @@ Yet another "my own std for zig" project. I try to keep it high quality and only
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Project is tested on zig version 0.12.0-dev.2701+d18f52197
+Project is tested on zig version 0.12.0-dev.3484+7aa42f47b
 
 ## Depend
 

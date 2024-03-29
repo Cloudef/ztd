@@ -177,25 +177,25 @@ pub fn setenv(key: []const u8, maybe_value: ?[]const u8) SetenvError!void {
 test "setenv" {
     // do not allow empty keys
     try std.testing.expectError(error.SetenvFailed, setenv("", "evil"));
-    try std.testing.expectEqual(null, std.os.getenv("evil"));
+    try std.testing.expectEqual(null, std.posix.getenv("evil"));
     // empty values are ok though
     try setenv("good", "");
-    try std.testing.expectEqualSlices(u8, "", std.os.getenv("good").?);
+    try std.testing.expectEqualSlices(u8, "", std.posix.getenv("good").?);
     try setenv("good", null);
-    try std.testing.expectEqual(null, std.os.getenv("good"));
+    try std.testing.expectEqual(null, std.posix.getenv("good"));
     env_state.reset_memory(true);
 }
 
 test "setenv allocs" {
     env_state.allocator = std.testing.allocator;
     try setenv("joulupukki", "asuu pohjoisnavalla");
-    try std.testing.expectEqualSlices(u8, "asuu pohjoisnavalla", std.os.getenv("joulupukki").?);
+    try std.testing.expectEqualSlices(u8, "asuu pohjoisnavalla", std.posix.getenv("joulupukki").?);
     try setenv("joulupukki", null);
-    try std.testing.expectEqual(null, std.os.getenv("joulupukki"));
+    try std.testing.expectEqual(null, std.posix.getenv("joulupukki"));
     try setenv("joulupukki", "tuo lahjoja");
-    try std.testing.expectEqualSlices(u8, "tuo lahjoja", std.os.getenv("joulupukki").?);
+    try std.testing.expectEqualSlices(u8, "tuo lahjoja", std.posix.getenv("joulupukki").?);
     try setenv("tontut", "vahtii lapsia");
-    try std.testing.expectEqualSlices(u8, "vahtii lapsia", std.os.getenv("tontut").?);
+    try std.testing.expectEqualSlices(u8, "vahtii lapsia", std.posix.getenv("tontut").?);
     try setenv("joulupukki", null);
     try setenv("tontut", null);
     env_state.reset_memory(false);

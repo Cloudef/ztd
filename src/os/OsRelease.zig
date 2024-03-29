@@ -145,9 +145,12 @@ pub fn initFromContentsUnmanaged(buffer: []const u8) @This() {
     while (tokens.next()) |key| if (tokens.next()) |value| {
         inline for (std.meta.fields(@This())) |f| {
             if (comptime !std.mem.eql(u8, f.name, "buffer")) {
-                comptime var upper: [f.name.len]u8 = undefined;
-                _ = comptime std.ascii.upperString(&upper, f.name);
-                if (std.mem.eql(u8, upper[0..], key)) {
+                const upper: [f.name.len]u8 = blk: {
+                    comptime var upper: [f.name.len]u8 = undefined;
+                    _ = comptime std.ascii.upperString(&upper, f.name);
+                    break :blk upper;
+                };
+                if (std.mem.eql(u8, &upper, key)) {
                     const stripped = if (value.len > 0 and value[0] == '"') value[1 .. value.len - 1] else value;
                     if (stripped.len > 0) @field(self, f.name) = stripped;
                 }
