@@ -1,6 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const private = @import("private.zig");
+const ztd = @import("ztd.zig");
 
 const c = struct {
     extern fn setenv(key: [*:0]u8, value: [*:0]u8, overwrite: c_int) c_int;
@@ -16,7 +16,7 @@ pub const SetenvError = error{
 // This is only used if not linked against libc
 // Yes this is global, that's setenv for you
 const env_state = struct {
-    var allocator: std.mem.Allocator = private.opt(std.mem.Allocator, std.heap.page_allocator, ".setenv_allocator");
+    var allocator: std.mem.Allocator = ztd.options.setenv_allocator;
     var start: usize = 0;
     var end: usize = 0;
     var original_envp: [][*:0]u8 = undefined;

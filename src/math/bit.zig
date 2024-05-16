@@ -1,7 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const ztd = @import("../ztd.zig");
-const private = @import("../private.zig");
 const byteSizeOf = ztd.mem.byteSizeOf;
 
 /// Returns a type that can index the `T`'s 'range of bits [0..nbits - 1]
@@ -74,7 +73,7 @@ pub fn Deque(BackingInt: type, head: Direction) type {
     const BackingIndex = Index(BackingInt);
     const BackingCount = Count(BackingInt);
     return struct {
-        const DebugOps = private.opt(bool, false, ".bit_deque_debug");
+        const DebugOps = ztd.options.bit_deque_debug;
         const Len = BackingCount;
         comptime capacity: BackingCount = @bitSizeOf(BackingInt),
         comptime range: BackingIndex = @bitSizeOf(BackingInt) - 1,
