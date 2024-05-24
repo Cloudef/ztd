@@ -5,12 +5,12 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     _ = b.addModule("ztd", .{
-        .root_source_file = .{ .path = "src/ztd.zig" },
+        .root_source_file = b.path("src/ztd.zig"),
         .imports = &.{},
     });
 
     const exe_test = b.addTest(.{
-        .root_source_file = .{ .path = "src/ztd.zig" },
+        .root_source_file = b.path("src/ztd.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -22,7 +22,7 @@ pub fn build(b: *std.Build) void {
 
     const doc_obj = b.addObject(.{
         .name = "docs",
-        .root_source_file = .{ .path = "src/ztd.zig" },
+        .root_source_file = b.path("src/ztd.zig"),
         .target = target,
         .optimize = optimize,
     });
