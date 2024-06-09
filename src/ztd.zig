@@ -6,6 +6,7 @@ pub const mem = @import("mem.zig");
 pub const math = @import("math.zig");
 pub const io = @import("io.zig");
 pub const os = @import("os.zig");
+pub const thread = @import("thread.zig");
 
 const root = @import("root");
 const std = @import("std");
@@ -17,7 +18,6 @@ pub const Options = struct {
     setenv_allocator: std.mem.Allocator = std.heap.page_allocator,
     bit_deque_debug: bool = false,
 };
-
 
 test {
     @import("std").testing.refAllDecls(@This());
