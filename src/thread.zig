@@ -29,6 +29,14 @@ pub fn ThreadFieldStore(T: type) type {
             const MutexField = struct {
                 mutex: std.Thread.RwLock = .{},
                 value: field.type = if (field.default_value) |ptr| @as(*const field.type, @ptrCast(@alignCast(ptr))).* else undefined,
+
+                pub fn unlockShared(self: *@This()) void {
+                    self.mutex.unlockShared();
+                }
+
+                pub fn unlock(self: *@This()) void {
+                    self.mutex.unlock();
+                }
             };
             fields = fields ++ .{.{
                 .name = field.name,
@@ -90,20 +98,20 @@ test "ThreadFieldStore" {
 
     {
         var field = store.get(.a, .exclusive);
-        defer field.mutex.unlock();
+        defer field.unlock();
         try std.testing.expectEqual(false, field.value);
         field.value = true;
     }
 
     {
         var field = store.get(.a, .shared);
-        defer field.mutex.unlockShared();
+        defer field.unlockShared();
         try std.testing.expectEqual(true, field.value);
     }
 
     {
         var field = store.get(.b, .shared);
-        defer field.mutex.unlockShared();
+        defer field.unlockShared();
         try std.testing.expectEqual(42, field.value);
     }
 }
