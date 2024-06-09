@@ -86,6 +86,39 @@ pub fn ThreadFieldStore(T: type) type {
             }
             unreachable;
         }
+
+        pub const LockMethod = enum {
+            exclusive,
+            shared,
+        };
+
+        pub fn lock(self: *@This(), comptime field: FieldEnum, comptime method: LockMethod) void {
+            inline for (std.meta.fields(Store), 0..) |fld, idx| {
+                if (idx == @intFromEnum(field)) {
+                    const v = &@field(self.unsafe, fld.name);
+                    switch (method) {
+                        .exclusive => v.mutex.lock(),
+                        .shared => v.mutex.lockShared(),
+                    }
+                    return;
+                }
+            }
+            unreachable;
+        }
+
+        pub fn unlock(self: *@This(), comptime field: FieldEnum, comptime method: LockMethod) void {
+            inline for (std.meta.fields(Store), 0..) |fld, idx| {
+                if (idx == @intFromEnum(field)) {
+                    const v = &@field(self.unsafe, fld.name);
+                    switch (method) {
+                        .exclusive => v.mutex.unlock(),
+                        .shared => v.mutex.unlockShared(),
+                    }
+                    return;
+                }
+            }
+            unreachable;
+        }
     };
 }
 
