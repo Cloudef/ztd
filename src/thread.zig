@@ -57,6 +57,7 @@ pub fn ThreadFieldStore(T: type) type {
     };
 
     return struct {
+        pub const Field = FieldEnum;
         unsafe: Store = .{},
 
         pub fn TypeOfField(comptime field: FieldEnum) type {
