@@ -1,6 +1,11 @@
 const std = @import("std");
 const ztd = @import("ztd.zig");
 
+pub const LockMethod = enum {
+    exclusive,
+    shared,
+};
+
 pub fn ThreadFieldStore(T: type) type {
     ztd.meta.comptimeAssertType(T, "ztd", "T", &.{.Struct});
 
@@ -30,12 +35,11 @@ pub fn ThreadFieldStore(T: type) type {
                 mutex: std.Thread.RwLock = .{},
                 value: field.type = if (field.default_value) |ptr| @as(*const field.type, @ptrCast(@alignCast(ptr))).* else undefined,
 
-                pub fn unlockShared(self: *@This()) void {
-                    self.mutex.unlockShared();
-                }
-
-                pub fn unlock(self: *@This()) void {
-                    self.mutex.unlock();
+                pub fn unlock(self: *@This(), comptime method: LockMethod) void {
+                    switch (method) {
+                        .exclusive => self.mutex.unlock(),
+                        .shared => self.mutex.unlockShared(),
+                    }
                 }
             };
             fields = fields ++ .{.{
@@ -88,19 +92,11 @@ pub fn ThreadFieldStore(T: type) type {
             unreachable;
         }
 
-        pub const LockMethod = enum {
-            exclusive,
-            shared,
-        };
-
         pub fn lock(self: *@This(), comptime field: FieldEnum, comptime method: LockMethod) void {
             inline for (std.meta.fields(Store), 0..) |fld, idx| {
                 if (idx == @intFromEnum(field)) {
                     const v = &@field(self.unsafe, fld.name);
-                    switch (method) {
-                        .exclusive => v.mutex.lock(),
-                        .shared => v.mutex.lockShared(),
-                    }
+                    v.unlock(method);
                     return;
                 }
             }
@@ -111,10 +107,7 @@ pub fn ThreadFieldStore(T: type) type {
             inline for (std.meta.fields(Store), 0..) |fld, idx| {
                 if (idx == @intFromEnum(field)) {
                     const v = &@field(self.unsafe, fld.name);
-                    switch (method) {
-                        .exclusive => v.mutex.unlock(),
-                        .shared => v.mutex.unlockShared(),
-                    }
+                    v.unlock(method);
                     return;
                 }
             }
@@ -132,20 +125,20 @@ test "ThreadFieldStore" {
 
     {
         var field = store.get(.a, .exclusive);
-        defer field.unlock();
+        defer field.unlock(.exclusive);
         try std.testing.expectEqual(false, field.value);
         field.value = true;
     }
 
     {
         var field = store.get(.a, .shared);
-        defer field.unlockShared();
+        defer field.unlock(.shared);
         try std.testing.expectEqual(true, field.value);
     }
 
     {
         var field = store.get(.b, .shared);
-        defer field.unlockShared();
+        defer field.unlock(.shared);
         try std.testing.expectEqual(42, field.value);
     }
 }
