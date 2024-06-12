@@ -15,6 +15,7 @@ jobs:
           nix run .#test
           nix run .#readme > README.md
       - uses: test-room-7/action-update-file@v1.8.0
+        branch: ${{ github.head_ref || github.ref_name }}
         with:
           file-path: |
             README.md
