@@ -6,7 +6,6 @@ pub const mem = @import("mem.zig");
 pub const math = @import("math.zig");
 pub const io = @import("io.zig");
 pub const os = @import("os.zig");
-pub const thread = @import("thread.zig");
 pub const enums = @import("enums.zig");
 
 const root = @import("root");
