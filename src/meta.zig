@@ -63,12 +63,19 @@ pub fn WithError(T: type) type {
     };
 }
 
-/// If `with_eu` is true, returns `WithError(fun.return_type)`
-/// If `with_eu` is false, returns `WithoutError(fun.return_type)`
-pub fn ReturnType(comptime fun: anytype, comptime with_eu: bool) type {
+/// Returns the ReturnType of `fun`, `mode` can be used to transform the returned type
+pub fn ReturnType(comptime fun: anytype, comptime mode: enum {
+    as_is,
+    with_error,
+    without_error,
+}) type {
     comptimeAssertValueType(fun, "ztd", "fun", &.{.Fn});
     const fun_info = @typeInfo(@TypeOf(fun)).Fn;
-    return if (with_eu) WithError(fun_info.return_type.?) else WithoutError(fun_info.return_type.?);
+    return switch (mode) {
+        .as_is => fun_info.return_type.?,
+        .with_error => WithError(fun_info.return_type.?),
+        .without_error => WithoutError(fun_info.return_type.?),
+    };
 }
 
 test "ReturnType" {
@@ -80,10 +87,12 @@ test "ReturnType" {
             return true;
         }
     };
-    try std.testing.expectEqual(anyerror!bool, ReturnType(tst.err, true));
-    try std.testing.expectEqual(bool, ReturnType(tst.err, false));
-    try std.testing.expectEqual(error{}!bool, ReturnType(tst.ok, true));
-    try std.testing.expectEqual(bool, ReturnType(tst.ok, false));
+    try std.testing.expectEqual(anyerror!bool, ReturnType(tst.err, .with_error));
+    try std.testing.expectEqual(bool, ReturnType(tst.err, .without_error));
+    try std.testing.expectEqual(error{}!bool, ReturnType(tst.ok, .with_error));
+    try std.testing.expectEqual(bool, ReturnType(tst.ok, .without_error));
+    try std.testing.expectEqual(bool, ReturnType(tst.ok, .as_is));
+    try std.testing.expectEqual(anyerror!bool, ReturnType(tst.err, .as_is));
 }
 
 /// Converts error union to optional
