@@ -1,7 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const ztd = @import("../ztd.zig");
-const byteSizeOf = ztd.mem.byteSizeOf;
+const packedSizeOf = ztd.mem.packedSizeOf;
 
 /// Returns a type that can index the `T`'s 'range of bits [0..nbits - 1]
 pub const Index = std.math.Log2Int;
@@ -50,7 +50,7 @@ pub inline fn extract(comptime T: type, v: T, E: type, off: Count(T)) ExtractErr
 }
 
 /// Extracts `E` from `T` as bytes with offset specified by `off`
-pub inline fn extractBytes(comptime T: type, v: T, E: type, off: Count(T)) ExtractError![byteSizeOf(E)]u8 {
+pub inline fn extractBytes(comptime T: type, v: T, E: type, off: Count(T)) ExtractError![packedSizeOf(E)]u8 {
     return ztd.mem.toPackedBytes(try extract(T, v, E, off));
 }
 
@@ -286,7 +286,7 @@ pub fn Deque(BackingInt: type, head: Direction) type {
         }
 
         /// Extract `T` as bytes from the deque with offset specified by `off`
-        pub inline fn extractAsBytes(self: @This(), T: type, off: BackingCount) DequeError![byteSizeOf(T)]u8 {
+        pub inline fn extractAsBytes(self: @This(), T: type, off: BackingCount) DequeError![packedSizeOf(T)]u8 {
             return extractBytes(BackingInt, self.value, T, off);
         }
 
