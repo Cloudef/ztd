@@ -45,7 +45,7 @@ pub inline fn call(
 }
 
 /// Call function `fun`, passing arguments from both `system_bindings` and `user_bindings`
-/// if the function accepts any of them as a parameters, always returns error
+/// if the function accepts any of them as a parameters, always returns a error union
 pub inline fn errorCall(
     comptime fun: anytype,
     system_bindings: anytype,
