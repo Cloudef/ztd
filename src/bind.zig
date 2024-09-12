@@ -7,7 +7,7 @@ inline fn callWithReturnType(
     system_bindings: anytype,
     user_bindings: anytype,
 ) ReturnType {
-    const fun_info = @typeInfo(@TypeOf(fun)).Fn;
+    const fun_info = @typeInfo(@TypeOf(fun)).@"fn";
     var args: std.meta.ArgsTuple(@TypeOf(fun)) = undefined;
     inline for (&args, fun_info.params[0..]) |*arg, param| {
         arg.* = blk: {

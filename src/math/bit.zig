@@ -28,7 +28,7 @@ pub const RangeError = error{
 
 /// Extracts range of bits from `T`
 pub inline fn extractRange(comptime T: type, v: T, start: Index(T), end: Index(T)) RangeError!T {
-    ztd.meta.comptimeAssertType(T, "ztd", "T", &.{ .Int, .ComptimeInt });
+    ztd.meta.comptimeAssertType(T, "ztd", "T", &.{ .int, .comptime_int });
     @setRuntimeSafety(false);
     if (start > end) return error.InvalidRange;
     const mask = ((@as(T, 1) << end) - 1) << start;
@@ -108,7 +108,7 @@ pub fn Deque(BackingInt: type, head: Direction) type {
         /// Raw variant of the push without type safety
         /// Useful when need to align pushes based on runtime variables
         pub inline fn rawPush(self: *@This(), bitsz: BackingIndex, v: anytype) DequeError!void {
-            ztd.meta.comptimeAssertValueType(v, "ztd", "T", &.{ .Int, .ComptimeInt });
+            ztd.meta.comptimeAssertValueType(v, "ztd", "T", &.{ .int, .comptime_int });
             @setRuntimeSafety(false);
             if (self.len == self.capacity) return error.NoSpaceLeft;
             switch (head) {

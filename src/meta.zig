@@ -38,8 +38,8 @@ pub inline fn comptimeAssertValueType(v: anytype, comptime prefix: []const u8, c
 
 /// Assert the signedness of a integer type comptime with a useful message
 pub inline fn comptimeAssertTypeSignedness(comptime T: type, comptime prefix: []const u8, comptime name: []const u8, comptime signedness: std.builtin.Signedness) void {
-    comptimeAssertType(T, "ztd", "T", &.{.Int});
-    comptimeError(@typeInfo(T).Int.signedness != signedness, "{s}: `{s}` must be a `{s}` integer", .{ prefix, name, @tagName(signedness) });
+    comptimeAssertType(T, "ztd", "T", &.{.int});
+    comptimeError(@typeInfo(T).int.signedness != signedness, "{s}: `{s}` must be a `{s}` integer", .{ prefix, name, @tagName(signedness) });
 }
 
 /// Assert the signedness of a integer type comptime with a useful message
@@ -50,7 +50,7 @@ pub inline fn comptimeAssertValueTypeSignedness(v: anytype, comptime prefix: []c
 /// If `T` is an error union, returns the payload, otherwise reutrns `T` as is
 pub fn WithoutError(T: type) type {
     return switch (@typeInfo(T)) {
-        .ErrorUnion => |eu| eu.payload,
+        .error_union => |eu| eu.payload,
         else => T,
     };
 }
@@ -58,7 +58,7 @@ pub fn WithoutError(T: type) type {
 /// If `T` is an error union, returns `T` as is, otherwise returns `error{}!T`
 pub fn WithError(T: type) type {
     return switch (@typeInfo(T)) {
-        .ErrorUnion => T,
+        .error_union => T,
         else => error{}!T,
     };
 }
@@ -69,8 +69,8 @@ pub fn ReturnType(comptime fun: anytype, comptime mode: enum {
     with_error,
     without_error,
 }) type {
-    comptimeAssertValueType(fun, "ztd", "fun", &.{.Fn});
-    const fun_info = @typeInfo(@TypeOf(fun)).Fn;
+    comptimeAssertValueType(fun, "ztd", "fun", &.{.@"fn"});
+    const fun_info = @typeInfo(@TypeOf(fun)).@"fn";
     return switch (mode) {
         .as_is => fun_info.return_type.?,
         .with_error => WithError(fun_info.return_type.?),
@@ -97,7 +97,7 @@ test "ReturnType" {
 
 /// Converts error union to optional
 pub fn maybe(v: anytype) ?WithoutError(@TypeOf(v)) {
-    comptimeAssertValueType(v, "ztd", "v", &.{.ErrorUnion});
+    comptimeAssertValueType(v, "ztd", "v", &.{.error_union});
     return if (v) |unwrapped| unwrapped else |_| null;
 }
 
@@ -117,7 +117,7 @@ test "maybe" {
 /// Returns true if `v` is `null`
 pub fn isNull(v: anytype) bool {
     return switch (@typeInfo(@TypeOf(v))) {
-        .Null, .Optional => v == null,
+        .null, .optional => v == null,
         else => false,
     };
 }
@@ -146,21 +146,58 @@ pub fn StrippedOf(comptime T: type, comptime filter: []const std.builtin.TypeId)
 
 /// Assigns every field that exists in both from `src` to `dst`
 pub fn assign(dst: anytype, src: anytype) void {
-    comptimeAssertValueType(dst, "ztd", "dst", &.{.Pointer});
-    comptimeAssertValueType(src, "ztd", "src", &.{ .Struct, .Union });
+    comptimeAssertValueType(dst, "ztd", "dst", &.{.pointer});
+    comptimeAssertValueType(src, "ztd", "src", &.{ .@"struct", .@"union" });
     inline for (std.meta.fields(std.meta.Child(@TypeOf(dst)))) |f| {
-        if (@hasField(StrippedOf(@TypeOf(src), &.{.Pointer}), f.name)) {
+        if (@hasField(StrippedOf(@TypeOf(src), &.{.pointer}), f.name)) {
             @field(dst, f.name) = @field(src, f.name);
         }
     }
 }
 
+test "assign" {
+    const Src = struct {
+        a: u32 = 42,
+        b: bool = true,
+        c: f32 = 66.6,
+    };
+
+    const Dst = struct {
+        b: bool = false,
+        a: u32 = 0,
+    };
+
+    var dst: Dst = .{};
+    assign(&dst, Src{});
+    try std.testing.expectEqual(42, dst.a);
+    try std.testing.expectEqual(true, dst.b);
+}
+
 /// Derives `T` from `src`
 /// That is creates empty `T` and does `assign(new, src)` on it and returns the result.
 pub inline fn derive(T: type, init: anytype, src: anytype) T {
-    comptimeAssertValueType(init, "ztd", "init", &.{.Struct});
-    comptimeAssertValueType(src, "ztd", "src", &.{ .Struct, .Union });
+    comptimeAssertValueType(init, "ztd", "init", &.{.@"struct"});
+    comptimeAssertValueType(src, "ztd", "src", &.{ .@"struct", .@"union" });
     var dst: T = std.mem.zeroInit(T, init);
     assign(&dst, src);
     return dst;
+}
+
+test "derive" {
+    const Src = struct {
+        a: u32 = 42,
+        b: bool = true,
+        c: f32 = 66.6,
+    };
+
+    const Dst = struct {
+        b: bool = false,
+        a: u32 = 0,
+        d: u8 = 255,
+    };
+
+    const dst = derive(Dst, Dst{ .d = 69 }, Src{});
+    try std.testing.expectEqual(42, dst.a);
+    try std.testing.expectEqual(true, dst.b);
+    try std.testing.expectEqual(69, dst.d);
 }

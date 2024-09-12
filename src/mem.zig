@@ -18,9 +18,9 @@ fn CopyPtrAttrs(
     comptime size: std.builtin.Type.Pointer.Size,
     comptime child: type,
 ) type {
-    const info = @typeInfo(source).Pointer;
+    const info = @typeInfo(source).pointer;
     return @Type(.{
-        .Pointer = .{
+        .pointer = .{
             .size = size,
             .is_const = info.is_const,
             .is_volatile = info.is_volatile,

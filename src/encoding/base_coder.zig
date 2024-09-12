@@ -22,7 +22,7 @@ pub fn BaseCoder(Impl: type) type {
         /// Decodes single block, expects bytes to have at least ::encodedLength size of T bytes
         /// If you are decoding fixed size types, this is the fastest method
         pub inline fn decode(comptime T: type, bytes: []const u8) Error!T {
-            ztd.meta.comptimeAssertType(T, "ztd", "T", &.{.Int});
+            ztd.meta.comptimeAssertType(T, "ztd", "T", &.{.int});
             @setRuntimeSafety(false);
             const len = comptime encodedLength(u8, @sizeOf(T));
             if (bytes.len < len) return error.NoSpaceLeft;
@@ -76,7 +76,7 @@ pub fn BaseCoder(Impl: type) type {
         /// Encodes single block, expects out to be at least ::encodedLength size
         /// If you are encoding fixed size types, this is the fastest method
         pub inline fn encode(comptime T: type, in: T, out: []u8) Error![]const u8 {
-            ztd.meta.comptimeAssertType(T, "ztd", "T", &.{.Int});
+            ztd.meta.comptimeAssertType(T, "ztd", "T", &.{.int});
             @setRuntimeSafety(false);
             const len = comptime encodedLength(u8, @sizeOf(T));
             if (out.len < len) return error.NoSpaceLeft;

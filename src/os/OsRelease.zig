@@ -146,6 +146,7 @@ pub fn initFromContentsUnmanaged(buffer: []const u8) @This() {
         inline for (std.meta.fields(@This())) |f| {
             if (comptime !std.mem.eql(u8, f.name, "buffer")) {
                 const upper: [f.name.len]u8 = blk: {
+                    @setEvalBranchQuota(f.name.len * 1000);
                     comptime var upper: [f.name.len]u8 = undefined;
                     _ = comptime std.ascii.upperString(&upper, f.name);
                     break :blk upper;
