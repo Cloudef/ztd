@@ -28,14 +28,14 @@ fn CopyPtrAttrs(
             .alignment = info.alignment,
             .address_space = info.address_space,
             .child = child,
-            .sentinel = null,
+            .sentinel_ptr = null,
         },
     });
 }
 
 fn AsPackedBytesReturnType(comptime P: type) type {
     const size = packedSizeOf(std.meta.Child(P));
-    return CopyPtrAttrs(P, .One, [size]u8);
+    return CopyPtrAttrs(P, .one, [size]u8);
 }
 
 /// Given a pointer to a single item, returns a slice of the underlying bytes, preserving pointer attributes.
