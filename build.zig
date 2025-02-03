@@ -6,13 +6,15 @@ pub fn build(b: *std.Build) void {
 
     _ = b.addModule("ztd", .{
         .root_source_file = b.path("src/ztd.zig"),
-        .imports = &.{},
+        .target = target,
+        .optimize = optimize,
     });
 
     const exe_test = b.addTest(.{
         .root_source_file = b.path("src/ztd.zig"),
         .target = target,
         .optimize = optimize,
+        .link_libc = b.option(bool, "libc", "link libc") orelse false,
     });
     const run_test_exe = b.addRunArtifact(exe_test);
     const run_test = b.step("test", "Run unit tests");

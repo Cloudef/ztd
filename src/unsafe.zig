@@ -9,6 +9,7 @@ const c = struct {
 
 pub const SetenvError = error{
     SetenvFailed,
+    OutOfMemory,
 };
 
 // This keeps track of the env state in process to avoid double freeing stuff
@@ -25,12 +26,14 @@ const env_state = struct {
     var once = std.once(do_once);
 
     fn do_once() void {
+        std.debug.assert(!builtin.link_libc);
         start = if (std.os.environ.len > 0) @intFromPtr(std.os.environ[0]) else 0;
         end = if (std.os.environ.len > 0) @intFromPtr(std.os.environ[std.os.environ.len - 1]) else start;
         original_envp = std.os.environ;
     }
 
     fn resize_env(n: usize) bool {
+        std.debug.assert(!builtin.link_libc);
         var newp = allocator.alloc([*:0]u8, n) catch return false;
 
         if (n >= std.os.environ.len) {
@@ -49,12 +52,14 @@ const env_state = struct {
     }
 
     fn free_item(item: [*:0]u8) void {
+        std.debug.assert(!builtin.link_libc);
         if (@intFromPtr(item) < start or @intFromPtr(item) > end) {
             allocator.free(std.mem.span(item));
         }
     }
 
     fn find_index(key: []const u8) ?usize {
+        std.debug.assert(!builtin.link_libc);
         for (std.os.environ, 0..) |*kv, i| {
             var token = std.mem.splitScalar(u8, std.mem.span(kv.*), '=');
             const env_key = token.first();
@@ -65,6 +70,7 @@ const env_state = struct {
 
     // only for tests
     fn reset_memory(free_items: bool) void {
+        if (builtin.link_libc) return;
         if (free_items) for (std.os.environ) |*kv| free_item(kv.*);
         if (env_state.allocated_envp) {
             env_state.allocator.free(std.os.environ);
@@ -140,7 +146,7 @@ pub fn setenv(key: []const u8, maybe_value: ?[]const u8) SetenvError!void {
         const allocator = env_state.allocator;
 
         if (maybe_value) |value| {
-            var buf = allocator.allocSentinel(u8, key.len + value.len + 1, 0) catch return error.SetenvFailed;
+            var buf = try allocator.allocSentinel(u8, key.len + value.len + 1, 0);
             @memcpy(buf[0..key.len], key[0..]);
             buf[key.len] = '=';
             @memcpy(buf[key.len + 1 ..], value[0..]);
@@ -202,7 +208,10 @@ test "setenv allocs" {
 }
 
 test "setenv failing allocs" {
+    if (builtin.link_libc) {
+        return error.SkipZigTest;
+    }
     env_state.allocator = std.testing.failing_allocator;
-    try std.testing.expectError(error.SetenvFailed, setenv("joulupukki", "asuu pohjoisnavalla"));
+    try std.testing.expectError(error.OutOfMemory, setenv("joulupukki", "asuu pohjoisnavalla"));
     try setenv("joulupukki", null); // no-op
 }
