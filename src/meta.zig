@@ -16,13 +16,13 @@ pub inline fn debug(comptime emit: bool, comptime fmt: []const u8, args: anytype
 }
 
 /// Does the type match any of the types in `filter`?
-pub fn isKind(comptime T: type, comptime filter: []const std.builtin.TypeId) bool {
+pub inline fn isKind(comptime T: type, comptime filter: []const std.builtin.TypeId) bool {
     inline for (filter) |f| if (@typeInfo(T) == f) return true;
     return filter.len == 0;
 }
 
 /// Is the type a "container-like" type (.Union, .Struct)
-pub fn isContainer(comptime T: type) bool {
+pub inline fn isContainer(comptime T: type) bool {
     return comptime isKind(T, &.{ .Union, .Struct });
 }
 
@@ -175,7 +175,7 @@ test "assign" {
 
 /// Derives `T` from `src`
 /// That is creates empty `T` and does `assign(new, src)` on it and returns the result.
-pub inline fn derive(T: type, init: anytype, src: anytype) T {
+pub fn derive(T: type, init: anytype, src: anytype) T {
     comptimeAssertValueType(init, "ztd", "init", &.{.@"struct"});
     comptimeAssertValueType(src, "ztd", "src", &.{ .@"struct", .@"union" });
     var dst: T = std.mem.zeroInit(T, init);

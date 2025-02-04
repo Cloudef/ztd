@@ -27,7 +27,7 @@ pub const RangeError = error{
 };
 
 /// Extracts range of bits from `T`
-pub inline fn extractRange(comptime T: type, v: T, start: Index(T), end: Index(T)) RangeError!T {
+pub fn extractRange(comptime T: type, v: T, start: Index(T), end: Index(T)) RangeError!T {
     ztd.meta.comptimeAssertType(T, "ztd", "T", &.{ .int, .comptime_int });
     @setRuntimeSafety(false);
     if (start > end) return error.InvalidRange;
@@ -40,7 +40,7 @@ pub const ExtractError = error{
 } || RangeError;
 
 /// Extracts `E` from `T` with offset specified by `off`, the result is truncated if `E` is smaller than `T`
-pub inline fn extract(comptime T: type, v: T, E: type, off: Count(T)) ExtractError!E {
+pub fn extract(comptime T: type, v: T, E: type, off: Count(T)) ExtractError!E {
     ztd.meta.comptimeError(@bitSizeOf(E) > @bitSizeOf(T), "ztd: `E` is larger than `T`", .{});
     @setRuntimeSafety(false);
     if (off == 0 and @bitSizeOf(E) == @bitSizeOf(T)) return v;
@@ -50,7 +50,7 @@ pub inline fn extract(comptime T: type, v: T, E: type, off: Count(T)) ExtractErr
 }
 
 /// Extracts `E` from `T` as bytes with offset specified by `off`
-pub inline fn extractBytes(comptime T: type, v: T, E: type, off: Count(T)) ExtractError![packedSizeOf(E)]u8 {
+pub fn extractBytes(comptime T: type, v: T, E: type, off: Count(T)) ExtractError![packedSizeOf(E)]u8 {
     return ztd.mem.toPackedBytes(try extract(T, v, E, off));
 }
 
@@ -84,7 +84,7 @@ pub fn Deque(BackingInt: type, head: Direction) type {
         /// You must set the `len` correctly, as it can't be understood from the `initial` value alone.
         /// If `endianess` is not the same as native endianess the value will be byte swapped
         /// That is `endianess` indicates the endianess of the `BackingInt` not the endianess `Queue` operates in
-        pub inline fn init(initial: BackingInt, len: BackingCount, endianess: std.builtin.Endian) @This() {
+        pub fn init(initial: BackingInt, len: BackingCount, endianess: std.builtin.Endian) @This() {
             if (endianess != comptime builtin.target.cpu.arch.endian()) {
                 return .{ .value = @byteSwap(initial), .len = len };
             } else {
@@ -93,13 +93,13 @@ pub fn Deque(BackingInt: type, head: Direction) type {
         }
 
         /// Empties the deque
-        pub inline fn clear(self: *@This()) void {
+        pub fn clear(self: *@This()) void {
             self.* = .{};
         }
 
         /// Returns index counted backwards from the capacity of the `Deque`
         /// This is a convience method that avoids having to @truncate() everywhere
-        pub inline fn tailIndex(self: @This(), off: BackingCount) BackingIndex {
+        pub fn tailIndex(self: @This(), off: BackingCount) BackingIndex {
             @setRuntimeSafety(false);
             std.debug.assert(off > 0);
             return @truncate(self.capacity - off);
@@ -107,7 +107,7 @@ pub fn Deque(BackingInt: type, head: Direction) type {
 
         /// Raw variant of the push without type safety
         /// Useful when need to align pushes based on runtime variables
-        pub inline fn rawPush(self: *@This(), bitsz: BackingIndex, v: anytype) DequeError!void {
+        pub fn rawPush(self: *@This(), bitsz: BackingIndex, v: anytype) DequeError!void {
             ztd.meta.comptimeAssertValueType(v, "ztd", "T", &.{ .int, .comptime_int });
             @setRuntimeSafety(false);
             if (self.len == self.capacity) return error.NoSpaceLeft;
@@ -150,7 +150,7 @@ pub fn Deque(BackingInt: type, head: Direction) type {
         /// head: .right
         /// push: 00000000 10101010
         /// push: 10101010 11111111
-        pub inline fn push(self: *@This(), T: type, v: T) DequeError!void {
+        pub fn push(self: *@This(), T: type, v: T) DequeError!void {
             ztd.meta.comptimeError(@bitSizeOf(T) >= self.capacity, "ztd: `T` must be smaller than `BackingInt`", .{});
             return self.rawPush(@bitSizeOf(T), v);
         }
@@ -158,7 +158,7 @@ pub fn Deque(BackingInt: type, head: Direction) type {
         /// When thinking about first and last, don't think in terms of bits
         /// Think in terms of the API this `Deque` struct exposes
         /// That is first pushed in, last pushed in
-        inline fn internalPop(self: *@This(), T: type, bitsz: BackingIndex, comptime first: bool) DequeError!T {
+        fn internalPop(self: *@This(), T: type, bitsz: BackingIndex, comptime first: bool) DequeError!T {
             @setRuntimeSafety(false);
             if (self.len == 0) return error.NoSpaceLeft;
             var ret: T = undefined;
@@ -224,13 +224,13 @@ pub fn Deque(BackingInt: type, head: Direction) type {
 
         /// Raw variant of the first pop without type safety
         /// Useful when need to align pops based on runtime variables
-        pub inline fn rawPopFirst(self: *@This(), T: type, bitsz: BackingIndex) DequeError!T {
+        pub fn rawPopFirst(self: *@This(), T: type, bitsz: BackingIndex) DequeError!T {
             return self.internalPop(T, bitsz, true);
         }
 
         /// Raw variant of the last pop without type safety
         /// Useful when need to align pops based on runtime variables
-        pub inline fn rawPopLast(self: *@This(), T: type, bitsz: BackingIndex) DequeError!T {
+        pub fn rawPopLast(self: *@This(), T: type, bitsz: BackingIndex) DequeError!T {
             return self.internalPop(T, bitsz, false);
         }
 
@@ -244,7 +244,7 @@ pub fn Deque(BackingInt: type, head: Direction) type {
         /// head: .left
         /// pop: 11111111 10101010
         /// pop: 10101010 00000000
-        pub inline fn popFirst(self: *@This(), T: type) DequeError!T {
+        pub fn popFirst(self: *@This(), T: type) DequeError!T {
             ztd.meta.comptimeError(@bitSizeOf(T) >= self.capacity, "ztd: `T` must be smaller than `BackingInt`", .{});
             return self.internalPop(T, @bitSizeOf(T), true);
         }
@@ -259,7 +259,7 @@ pub fn Deque(BackingInt: type, head: Direction) type {
         /// head: .left
         /// pop: 11111111 10101010
         /// pop: 11111111 00000000
-        pub inline fn popLast(self: *@This(), T: type) DequeError!T {
+        pub fn popLast(self: *@This(), T: type) DequeError!T {
             ztd.meta.comptimeError(@bitSizeOf(T) >= self.capacity, "ztd: `T` must be smaller than `BackingInt`", .{});
             return self.internalPop(T, @bitSizeOf(T), false);
         }
@@ -267,7 +267,7 @@ pub fn Deque(BackingInt: type, head: Direction) type {
         /// Returns the value int as `T`, the result is truncated if `T` is smaller than `BackingInt`
         /// If `endianess` is not the same as native endianess the value will be byte swapped
         /// That is `endianess` indicates the endianess of the `BackingInt` not the endianess you want it to be returned in
-        pub inline fn as(self: @This(), T: type, endianess: std.builtin.Endian) T {
+        pub fn as(self: @This(), T: type, endianess: std.builtin.Endian) T {
             if (endianess != comptime builtin.target.cpu.arch.endian()) {
                 return @truncate(@byteSwap(self.value));
             } else {
@@ -276,21 +276,21 @@ pub fn Deque(BackingInt: type, head: Direction) type {
         }
 
         /// Return range of bits from the value int as a `T`, the result is truncated if `T` is smaller than `BackingInt`
-        pub inline fn rangeAs(self: @This(), T: type, start: BackingIndex, end: BackingIndex) DequeError!T {
+        pub fn rangeAs(self: @This(), T: type, start: BackingIndex, end: BackingIndex) DequeError!T {
             return @truncate(try extractRange(BackingInt, self.value, start, end));
         }
 
         /// Extract `T` from the deque with offset specified by `off`, the result is truncated if `T` is smaller than `BackingInt`
-        pub inline fn extractAs(self: @This(), T: type, off: BackingCount) DequeError!T {
+        pub fn extractAs(self: @This(), T: type, off: BackingCount) DequeError!T {
             return extract(BackingInt, self.value, T, off);
         }
 
         /// Extract `T` as bytes from the deque with offset specified by `off`
-        pub inline fn extractAsBytes(self: @This(), T: type, off: BackingCount) DequeError![packedSizeOf(T)]u8 {
+        pub fn extractAsBytes(self: @This(), T: type, off: BackingCount) DequeError![packedSizeOf(T)]u8 {
             return extractBytes(BackingInt, self.value, T, off);
         }
 
-        pub inline fn format(self: @This(), comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) !void {
+        pub fn format(self: @This(), comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) !void {
             return std.fmt.formatInt(self.value, 2, .lower, .{ .width = self.capacity, .fill = '0' }, writer);
         }
     };

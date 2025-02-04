@@ -2,7 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 /// Returns the packed byte size of `T`
-pub inline fn packedSizeOf(comptime T: type) usize {
+pub fn packedSizeOf(comptime T: type) usize {
     return std.math.divCeil(usize, @bitSizeOf(T), std.mem.byte_size_in_bits) catch unreachable;
 }
 
@@ -39,12 +39,12 @@ fn AsPackedBytesReturnType(comptime P: type) type {
 }
 
 /// Given a pointer to a single item, returns a slice of the underlying bytes, preserving pointer attributes.
-pub inline fn asPackedBytes(ptr: anytype) AsPackedBytesReturnType(@TypeOf(ptr)) {
+pub fn asPackedBytes(ptr: anytype) AsPackedBytesReturnType(@TypeOf(ptr)) {
     const len = comptime packedSizeOf(std.meta.Child(@TypeOf(ptr)));
     return std.mem.asBytes(ptr)[0..len];
 }
 
 /// Given any value, returns a copy of its bytes in an array tightly packed.
-pub inline fn toPackedBytes(value: anytype) [packedSizeOf(@TypeOf(value))]u8 {
+pub fn toPackedBytes(value: anytype) [packedSizeOf(@TypeOf(value))]u8 {
     return asPackedBytes(&value).*;
 }

@@ -15,13 +15,13 @@ pub fn BaseCoder(Impl: type) type {
         const Symbol = Impl.Symbol;
 
         /// Returns length of the decoded result
-        pub inline fn decodedLength(comptime T: type, encoded_len: usize) usize {
+        pub fn decodedLength(comptime T: type, encoded_len: usize) usize {
             return std.math.divFloor(usize, encoded_len * @bitSizeOf(Symbol), @bitSizeOf(T)) catch unreachable;
         }
 
         /// Decodes single block, expects bytes to have at least ::encodedLength size of T bytes
         /// If you are decoding fixed size types, this is the fastest method
-        pub inline fn decode(comptime T: type, bytes: []const u8) Error!T {
+        pub fn decode(comptime T: type, bytes: []const u8) Error!T {
             ztd.meta.comptimeAssertType(T, "ztd", "T", &.{.int});
             @setRuntimeSafety(false);
             const len = comptime encodedLength(u8, @sizeOf(T));
@@ -32,7 +32,7 @@ pub fn BaseCoder(Impl: type) type {
         }
 
         /// Decodes single block to a writer
-        pub inline fn decodeToWriter(comptime T: type, bytes: []const u8, writer: anytype) Error!usize {
+        pub fn decodeToWriter(comptime T: type, bytes: []const u8, writer: anytype) Error!usize {
             try writer.writeAll(std.mem.asBytes(try decode(T, bytes)));
             return @sizeOf(T);
         }
@@ -55,27 +55,27 @@ pub fn BaseCoder(Impl: type) type {
         }
 
         /// Encodes slice to a out buffer, out must be at least the size of ::decodedLength
-        pub inline fn decodeSlice(bytes: []const u8, out: []u8) Error![]const u8 {
+        pub fn decodeSlice(bytes: []const u8, out: []u8) Error![]const u8 {
             var stream = std.io.fixedBufferStream(out);
             _ = decodeSliceToWriter(bytes, stream.writer()) catch unreachable;
             return stream.buffer[0..stream.pos];
         }
 
         /// Encodes slice to a allocated buffer
-        pub inline fn decodeSliceAlloc(allocator: std.mem.Allocator, bytes: []const u8) Error![]const u8 {
+        pub fn decodeSliceAlloc(allocator: std.mem.Allocator, bytes: []const u8) Error![]const u8 {
             const len = comptime decodedLength(u8, bytes.len);
             const out = allocator.alloc(u8, len);
             return try decodeSlice(bytes, out);
         }
 
         /// Returns length of the encoded result
-        pub inline fn encodedLength(comptime T: type, bytes_len: usize) usize {
+        pub fn encodedLength(comptime T: type, bytes_len: usize) usize {
             return (std.math.divCeil(usize, bytes_len * @bitSizeOf(T), @bitSizeOf(Symbol)) catch unreachable);
         }
 
         /// Encodes single block, expects out to be at least ::encodedLength size
         /// If you are encoding fixed size types, this is the fastest method
-        pub inline fn encode(comptime T: type, in: T, out: []u8) Error![]const u8 {
+        pub fn encode(comptime T: type, in: T, out: []u8) Error![]const u8 {
             ztd.meta.comptimeAssertType(T, "ztd", "T", &.{.int});
             @setRuntimeSafety(false);
             const len = comptime encodedLength(u8, @sizeOf(T));
@@ -86,7 +86,7 @@ pub fn BaseCoder(Impl: type) type {
         }
 
         /// Encodes single block to a writer
-        pub inline fn encodeToWriter(comptime T: type, in: T, writer: anytype) (Error || @TypeOf(writer).Error)!usize {
+        pub fn encodeToWriter(comptime T: type, in: T, writer: anytype) (Error || @TypeOf(writer).Error)!usize {
             const len = comptime encodedLength(u8, @sizeOf(T));
             var out: [len]u8 = undefined;
             try writer.writeAll(try encode(T, in, &out));
@@ -110,14 +110,14 @@ pub fn BaseCoder(Impl: type) type {
         }
 
         /// Encodes slice to a out buffer, out must be at least the size of ::encodedLength
-        pub inline fn encodeSlice(bytes: []const u8, out: []u8) Error![]const u8 {
+        pub fn encodeSlice(bytes: []const u8, out: []u8) Error![]const u8 {
             var stream = std.io.fixedBufferStream(out);
             _ = encodeSliceToWriter(bytes, stream.writer()) catch unreachable;
             return stream.buffer[0..stream.pos];
         }
 
         /// Encodes slice to a allocated buffer
-        pub inline fn encodeSliceAlloc(allocator: std.mem.Allocator, bytes: []const u8) Error![]const u8 {
+        pub fn encodeSliceAlloc(allocator: std.mem.Allocator, bytes: []const u8) Error![]const u8 {
             const len = comptime encodedLength(u8, bytes.len);
             const out = allocator.alloc(u8, len);
             return try encodeSlice(bytes, out);

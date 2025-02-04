@@ -7,7 +7,7 @@ pub const Error = base_coder.Error;
 pub const CrockfordImpl = struct {
     pub const Symbol = u5;
     pub const set = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-    pub inline fn lookup(c: u8) Error!Symbol {
+    pub fn lookup(c: u8) Error!Symbol {
         return switch (c) {
             inline '0', 'O', 'o' => 0,
             inline '1', 'I', 'i', 'L', 'l' => 1,
