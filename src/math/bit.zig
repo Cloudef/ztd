@@ -46,7 +46,7 @@ pub fn extract(comptime T: type, v: T, E: type, off: Count(T)) ExtractError!E {
     if (off == 0 and @bitSizeOf(E) == @bitSizeOf(T)) return v;
     if (@bitSizeOf(T) - @as(Count(T), off) < @bitSizeOf(E)) return error.NoSpaceLeft;
     const end: Index(E) = @min(std.math.maxInt(Index(E)), off + @bitSizeOf(E));
-    return @truncate(try extractRange(T, v, off, end));
+    return @truncate(try extractRange(T, v, @intCast(off), end));
 }
 
 /// Extracts `E` from `T` as bytes with offset specified by `off`
