@@ -39,3 +39,21 @@ pub const crockford = BaseCoder(CrockfordImpl);
 /// However there is no support for encoding to lowercase
 /// https://gist.github.com/szktty/228f85794e4187882a77734c89c384a8
 pub const clockwork = crockford;
+
+test "crockford" {
+    var enc: [1024]u8 = undefined;
+    try std.testing.expectEqual(5, comptime crockford.encodedLength(u8, "moi".len));
+    try std.testing.expectEqual("moi".len, comptime crockford.decodedLength(u8, 5));
+    try std.testing.expectEqualSlices(u8, "CR", try crockford.encode(u8, 'f', &enc));
+    try std.testing.expectEqual('f', try crockford.decode(u8, "CR"));
+    try std.testing.expectEqualSlices(u8, "CSTG", try crockford.encode(u16, std.mem.bytesToValue(u16, "fu"), &enc));
+    try std.testing.expectEqualSlices(u8, "CSTG", try crockford.encodeSlice("fu", &enc));
+    try std.testing.expectEqual(std.mem.bytesToValue(u16, "fu"), try crockford.decode(u16, "CSTG"));
+    try std.testing.expectEqualSlices(u8, "fu", try crockford.decodeSlice("CSTG", &enc));
+    try std.testing.expectEqualSlices(u8, "CSQPYRK1E8", try crockford.encodeSlice("foobar", &enc));
+    try std.testing.expectEqualSlices(u8, "91JPRV3F5GG7EVVJDHJ22", try crockford.encodeSlice("Hello, world!", &enc));
+    try std.testing.expectEqualSlices(u8, "AHM6A83HENMP6TS0C9S6YXVE41K6YY10D9TPTW3K41QQCSBJ41T6GS90DHGQMY90CHQPEBG", try crockford.encodeSlice("The quick brown fox jumps over the lazy dog.", &enc));
+    try std.testing.expectEqualSlices(u8, "foobar", try crockford.decodeSlice("CSQPYRK1E8", &enc));
+    try std.testing.expectEqualSlices(u8, "Hello, world!", try crockford.decodeSlice("91JPRV3F5GG7EVVJDHJ22", &enc));
+    try std.testing.expectEqualSlices(u8, "The quick brown fox jumps over the lazy dog.", try crockford.decodeSlice("AHM6A83HENMP6TS0C9S6YXVE41K6YY10D9TPTW3K41QQCSBJ41T6GS90DHGQMY90CHQPEBG", &enc));
+}
