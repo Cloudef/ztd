@@ -8,24 +8,24 @@ pub const CrockfordImpl = struct {
     pub const Symbol = u5;
     pub const set = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
     pub fn lookup(c: u8) Error!Symbol {
-        return switch (c) {
-            inline '0', 'O', 'o' => 0,
-            inline '1', 'I', 'i', 'L', 'l' => 1,
-            inline '2'...'9' => |i| i - '0',
-            inline 'A'...'H' => |i| i - 'A' + 10,
-            inline 'a'...'h' => |i| i - 'a' + 10,
-            inline 'J'...'K' => |i| i - 'J' + 18,
-            inline 'j'...'k' => |i| i - 'j' + 18,
-            inline 'M'...'N' => |i| i - 'M' + 20,
-            inline 'm'...'n' => |i| i - 'm' + 20,
-            inline 'P'...'T' => |i| i - 'P' + 22,
-            inline 'p'...'t' => |i| i - 'p' + 22,
-            inline 'V'...'Z' => |i| i - 'V' + 27,
-            inline 'v'...'z' => |i| i - 'v' + 27,
+        return @intCast(switch (c) {
+            '0', 'O', 'o' => 0,
+            '1', 'I', 'i', 'L', 'l' => 1,
+            '2'...'9' => |i| i - '0',
+            'A'...'H' => |i| i - 'A' + 10,
+            'a'...'h' => |i| i - 'a' + 10,
+            'J'...'K' => |i| i - 'J' + 18,
+            'j'...'k' => |i| i - 'j' + 18,
+            'M'...'N' => |i| i - 'M' + 20,
+            'm'...'n' => |i| i - 'm' + 20,
+            'P'...'T' => |i| i - 'P' + 22,
+            'p'...'t' => |i| i - 'p' + 22,
+            'V'...'Z' => |i| i - 'V' + 27,
+            'v'...'z' => |i| i - 'v' + 27,
             // Accidental obscenity
-            inline 'U', 'u' => error.InvalidCharacter,
-            inline else => error.InvalidCharacter,
-        };
+            'U', 'u' => return error.InvalidCharacter,
+            else => return error.InvalidCharacter,
+        });
     }
 };
 

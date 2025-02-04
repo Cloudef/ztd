@@ -298,8 +298,8 @@ pub fn Deque(BackingInt: type, head: Direction) type {
 
 test "Deque" {
     const reverse_endian = switch (comptime builtin.target.cpu.arch.endian()) {
-        inline .little => .big,
-        inline .big => .little,
+        .little => .big,
+        .big => .little,
     };
 
     inline for (.{ .left, .right }) |head| {
