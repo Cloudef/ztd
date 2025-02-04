@@ -7,7 +7,6 @@ pub const Error = error{
 };
 
 /// Generic base encoder / decoder
-/// Not tested with other than Base32, but in theory should work :thinking:
 pub fn BaseCoder(Impl: type) type {
     ztd.meta.comptimeError(std.math.IntFittingRange(0, Impl.set.len - 1) != Impl.Symbol, "ztd: `Symbol` cannot represent the `set`", .{});
     ztd.meta.comptimeError(@bitSizeOf(Impl.Symbol) > @bitSizeOf(u8), "ztd: `Symbol` larger than u8 is not supported", .{});
