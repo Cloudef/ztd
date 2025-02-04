@@ -46,10 +46,6 @@ pub fn BaseCoder(Impl: type) type {
                     _ = try buf.write(deque.popFirst(u8) catch unreachable);
                 }
             }
-            // Padding?
-            // if (deque.len > 0) {
-            //     _ = try buf.write(deque.popFirst(u8) catch unreachable);
-            // }
             try buf.flush();
         }
 
