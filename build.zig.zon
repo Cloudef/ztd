@@ -1,5 +1,6 @@
 .{
-    .name = "ztd",
+    .name = .ztd,
+    .fingerprint = 0xa7ab2d27616d7bec,
     .version = "1.0.0",
     .paths = .{
         "src",

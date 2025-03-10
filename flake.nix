@@ -12,7 +12,7 @@
       # Check the flake.nix in zig-flake project for more options:
       # <https://github.com/Cloudef/mach-flake/blob/master/flake.nix>
       env = zig2nix.outputs.zig-env.${system} {
-        zig = zig2nix.outputs.packages.${system}.zig.master.bin;
+        zig = zig2nix.outputs.packages.${system}.zig-master;
       };
     in rec {
       # nix run .
@@ -33,14 +33,8 @@
       # nix run .#deps
       apps.deps = env.showExternalDeps;
 
-      # nix run .#zon2json
-      apps.zon2json = env.app [env.zon2json] "zon2json \"$@\"";
-
-      # nix run .#zon2json-lock
-      apps.zon2json-lock = env.app [env.zon2json-lock] "zon2json-lock \"$@\"";
-
-      # nix run .#zon2nix
-      apps.zon2nix = env.app [env.zon2nix] "zon2nix \"$@\"";
+      # nix run .#zig2nix
+      apps.zig2nix = env.app [] "zig2nix \"$@\"";
 
       # nix develop
       devShells.default = env.mkShell {};
