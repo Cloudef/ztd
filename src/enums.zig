@@ -9,16 +9,16 @@ pub fn BoundedEnumArray(E: type) type {
 pub fn Bitfield(T: type) type {
     var fields: []const std.builtin.Type.StructField = &.{};
     for (std.meta.fields(T)) |field| {
-        fields = fields ++ .{.{
+        fields = fields ++ .{std.builtin.Type.StructField{
             .name = field.name,
             .type = bool,
-            .default_value = &false,
+            .default_value_ptr = &false,
             .is_comptime = false,
             .alignment = 0,
         }};
     }
     return @Type(.{
-        .Struct = .{
+        .@"struct" = .{
             .layout = .@"packed",
             .fields = fields,
             .decls = &.{},
@@ -31,7 +31,7 @@ pub fn Bitfield(T: type) type {
 pub fn BitfieldSet(T: type) type {
     return struct {
         pub const Field = switch (@typeInfo(T)) {
-            .Enum => T,
+            .@"enum" => T,
             else => std.meta.FieldEnum(T),
         };
 
